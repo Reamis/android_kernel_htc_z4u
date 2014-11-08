@@ -885,7 +885,9 @@ static int is_connected_input_ep(struct snd_soc_dapm_widget *widget,
 	return con;
 }
 
-/* Get the DAPM AIF widget for thie DAI stream */
+/*
+ * Handler for generic register modifier widget.
+ */
 struct snd_soc_dapm_widget *snd_soc_get_codec_widget(struct snd_soc_card *card,
 		struct snd_soc_codec *codec, const char *name)
 {
@@ -1613,7 +1615,9 @@ static int dapm_power_widgets(struct snd_soc_dapm_context *dapm, int event)
 			/* Supplies and micbiases only bring the
 			 * context up to STANDBY as unless something
 			 * else is active and passing audio they
-			 * generally don't require full power.
+			 * generally don't require full power.  Signal
+			 * generators are virtual pins and have no
+			 * power impact themselves.
 			 */
 			switch (w->id) {
 			case snd_soc_dapm_supply:
@@ -3114,9 +3118,7 @@ int snd_soc_dapm_stream_event(struct snd_soc_pcm_runtime *rtd,
 void snd_soc_dapm_codec_stream_event(struct snd_soc_codec *codec,
 	const char *stream, int event)
 {
-//	mutex_lock(&codec->card->dapm_mutex);
 	soc_dapm_stream_event(&codec->dapm, stream, event);
-//	mutex_unlock(&codec->card->dapm_mutex);
 }
 EXPORT_SYMBOL(snd_soc_dapm_codec_stream_event);
 
