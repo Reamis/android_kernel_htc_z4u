@@ -131,7 +131,7 @@ static struct usb_request *adb_request_new(struct usb_ep *ep, int buffer_size)
 	if (!req)
 		return NULL;
 
-
+	
 	req->buf = kmalloc(buffer_size, GFP_KERNEL);
 	if (!req->buf) {
 		usb_ep_free_request(ep, req);
@@ -234,7 +234,7 @@ static int adb_create_bulk_endpoints(struct adb_dev *dev,
 		return -ENODEV;
 	}
 	DBG(cdev, "usb_ep_autoconfig for ep_in got %s\n", ep->name);
-	ep->driver_data = dev;
+	ep->driver_data = dev;		
 	dev->ep_in = ep;
 
 	ep = usb_ep_autoconfig(cdev->gadget, out_desc);
@@ -243,10 +243,10 @@ static int adb_create_bulk_endpoints(struct adb_dev *dev,
 		return -ENODEV;
 	}
 	DBG(cdev, "usb_ep_autoconfig for adb ep_out got %s\n", ep->name);
-	ep->driver_data = dev;
+	ep->driver_data = dev;		
 	dev->ep_out = ep;
 
-
+	
 	req = adb_request_new(dev->ep_out, ADB_BULK_BUFFER_SIZE);
 	if (!req)
 		goto fail;
@@ -286,7 +286,7 @@ static ssize_t adb_read(struct file *fp, char __user *buf,
 	if (adb_lock(&dev->read_excl))
 		return -EBUSY;
 
-
+	
 	while (!(atomic_read(&dev->online) || atomic_read(&dev->error))) {
 		pr_debug("adb_read: waiting for online state\n");
 		ret = wait_event_interruptible(dev->read_wq,
@@ -303,7 +303,7 @@ static ssize_t adb_read(struct file *fp, char __user *buf,
 	}
 
 requeue_req:
-
+	
 	req = dev->rx_req;
 	req->length = count;
 	dev->rx_done = 0;
@@ -317,7 +317,7 @@ requeue_req:
 		pr_debug("rx %p queue\n", req);
 	}
 
-
+	
 	ret = wait_event_interruptible(dev->read_wq, dev->rx_done);
 	if (ret < 0) {
 		if (ret != -ERESTARTSYS)
@@ -327,7 +327,7 @@ requeue_req:
 		goto done;
 	}
 	if (!atomic_read(&dev->error)) {
-
+		
 		if (req->actual == 0)
 			goto requeue_req;
 
@@ -367,7 +367,7 @@ static ssize_t adb_write(struct file *fp, const char __user *buf,
 			break;
 		}
 
-
+		
 		req = 0;
 		ret = wait_event_interruptible(dev->write_wq,
 			((req = adb_req_get(dev, &dev->tx_idle)) ||
@@ -400,7 +400,7 @@ static ssize_t adb_write(struct file *fp, const char __user *buf,
 			buf += xfer;
 			count -= xfer;
 
-
+			
 			req = 0;
 		}
 	}
@@ -429,7 +429,7 @@ static int adb_open(struct inode *ip, struct file *fp)
 
 	fp->private_data = _adb_dev;
 
-
+	
 	atomic_set(&_adb_dev->error, 0);
 	return 0;
 }
@@ -520,19 +520,19 @@ adb_function_bind(struct usb_configuration *c, struct usb_function *f)
 	dev->cdev = cdev;
 	DBG(cdev, "adb_function_bind dev: %p\n", dev);
 
-
+	
 	id = usb_interface_id(c, f);
 	if (id < 0)
 		return id;
 	adb_interface_desc.bInterfaceNumber = id;
 
-
+	
 	ret = adb_create_bulk_endpoints(dev, &adb_fullspeed_in_desc,
 			&adb_fullspeed_out_desc);
 	if (ret)
 		return ret;
 
-
+	
 	if (gadget_is_dualspeed(c->cdev->gadget)) {
 		adb_highspeed_in_desc.bEndpointAddress =
 			adb_fullspeed_in_desc.bEndpointAddress;
@@ -603,7 +603,7 @@ static int adb_function_set_alt(struct usb_function *f,
 	}
 	atomic_set(&dev->online, 1);
 
-
+	
 	wake_up(&dev->read_wq);
 	return 0;
 }
@@ -619,7 +619,7 @@ static void adb_function_disable(struct usb_function *f)
 	usb_ep_disable(dev->ep_in);
 	usb_ep_disable(dev->ep_out);
 
-
+	
 	wake_up(&dev->read_wq);
 
 	VDBG(cdev, "%s disabled\n", dev->function.name);
@@ -670,12 +670,11 @@ static int adb_setup(void)
 	if (ret)
 		goto err;
 
-	//run in any case!
-	//if ((board_mfg_mode() != 0) || (board_get_usb_ats() == 1)) {
+	if ((board_mfg_mode() != 0) || (board_get_usb_ats() == 1)) {
 		ret = misc_register(&adb_enable_device);
 		if (ret)
 			goto err;
-	//}
+	}
 
 	return 0;
 
